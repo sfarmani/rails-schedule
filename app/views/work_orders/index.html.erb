@@ -1,0 +1,58 @@
+<%= div_tag(class: 'col-md-12') do %>
+  <%= div_tag(class: 'row') do %>
+    <%= div_tag(class: 'container') do %>
+      <%= h1_tag("Work Orders for #{Date.parse('2010-01-19').strftime('%y/%m/%d')}", class: 'text-center') %>
+    <% end %>
+  <% end %>
+  <%= div_tag(class: 'container-fluid') do %>
+    <%= table_tag(class: 'table') do %>
+
+      <%= thead_tag do %>
+        <%= tr_tag do %>
+          <%= th_tag('Time', scope: 'col') %>
+          <% @technicians.each do |technician| %>
+            <%= th_tag(technician.name, scope: 'col') %>
+          <% end %>
+        <% end %>
+      <% end %>
+
+      <%= tbody_tag do %>
+        <% start_time = Time.parse('10/1/19 12:00 am') %>
+        <% end_time   = Time.parse('10/1/19 11:59 pm') %>
+        <% hour = start_time %>
+
+        <% while hour <= end_time %>
+          <%= tr_tag do %>
+            <%= th_tag(hour.min == 0 ? hour.strftime('%l:%M %p') : '', scope: 'row', class: hour.min == 0 ? '_hour_border' : '_no_border') %>
+
+            <% @technicians.each do |technician| %>
+              <% work_order = @all_work_orders.where(technician_id: technician.id).where(time: hour..(hour + 10.minutes)).first %>
+
+              <% if work_order.present? %>
+                <% location = @locations.where(id: work_order.location_id).first %>
+                <% time = work_order.time.getlocal('-08:00') %>
+                <% duration = work_order.duration %>
+                <% endtime = (time + duration.minutes).strftime('%B %d %Y %l:%M %p') %>
+
+                <%= td_tag(class: hour.min == 0 ? 'hour_border' : 'no_border') do %>
+                  <%= div_tag(data: {for: "#{technician.id}_#{work_order.id}"}, class: "work_order_duration height_#{(duration * 132) / 60} #{![0, 15, 30, 45].include?(time.min) ? "margintop_#{time.min}" : ''}") do %>
+                    <%= input_tag('', type: 'hidden', id: "#{technician.id}_#{work_order.id}", data: {row: technician.id, starttime: time.strftime('%B %d %Y %l:%M %p'), endtime: endtime}) %>
+                    <%= h6_tag(b_tag("#{time.strftime('%l:%M %p')} to #{(time + duration.minutes).strftime('%l:%M %p')}")) %>
+                    <%= span_tag("#{location.name}, #{location.city}") %>
+                    <%= br_tag %>
+                    <%= span_tag("#{b_tag('Price')}: $#{"%.2f" % work_order.price.to_f}".html_safe) %>
+                  <% end %>
+                <% end %>
+              <% else %>
+                <%= td_tag('', class: "clickable #{hour.min == 0 ? 'hour_border' : 'no_border'}", data: {row: technician.id, hour: hour.strftime('%B %d %Y %l:%M %p')}) %>
+              <% end %>
+            <% end %>
+
+          <% end %>
+          <% hour += 15.minutes %>
+        <% end  %>
+
+      <% end %>
+    <% end %>
+  <% end %>
+<% end %>
